@@ -1,6 +1,7 @@
 <?php
 require 'lexer.php';
 require 'funciones.php';
+require 'funcionesPrefijo.php';
 
 class nodo{
     public token $token;
@@ -75,8 +76,8 @@ function insertarORs($array) {
     return $nuevoArray;
 }
 
-//-3-
-function ordenPrefijo(array $tokens, $columnas){
+//-3-Sufijo
+function ordenPrefijo(array $tokens, $columnas, $prefijo = false){
     $pila = [];
     $salida = [];
 
@@ -109,7 +110,11 @@ function ordenPrefijo(array $tokens, $columnas){
                     throw new Exception("Error en NOT : ". $tokens[$i+1]->lexema);
                 }
                 $nodoEval = crearNodo($tokens[$i+1]);
-                $lexema = evaluar($nodoEval, $columnas);
+                if($prefijo){
+                    $lexema = evaluarPrefijo($nodoEval, $columnas);
+                }else{
+                    $lexema = evaluarSufijo($nodoEval, $columnas);
+                }
                 $token->lexema = $lexema;
                 $salida[] = $token;
                 $i++;
@@ -127,7 +132,6 @@ function ordenPrefijo(array $tokens, $columnas){
 //-4-
 function construirArbol(array $tokens){
     $pila = [];
-
     for($i=0; $i<sizeof($tokens); $i++){
         $token = $tokens[$i];
         switch ($token->tipo){
@@ -175,7 +179,7 @@ function esUnario(token $token){
     }
 }
 //-5-
-function evaluar($nodo, $columnas){
+function evaluarSufijo($nodo, $columnas){
     if(is_null($nodo)){
         return '';
     }
@@ -189,10 +193,34 @@ function evaluar($nodo, $columnas){
             return patron($token->lexema, $columnas);
         case tipoToken::tokenAND:
         case tipoToken::tokenOR: 
-            return boleanoAndOr($token->lexema,evaluar($nodo->izquierda, $columnas), evaluar($nodo->derecha, $columnas));
+            return boleanoAndOr($token->lexema,evaluarSufijo($nodo->izquierda, $columnas), evaluarSufijo($nodo->derecha, $columnas));
         break;
         case tipoToken::tokenNOT:
             return not($token->lexema);
+            break;
+        default:
+        throw new Exception("Error al evalur el arbol binario");
+    }
+}
+
+function evaluarPrefijo($nodo, $columnas){
+    if(is_null($nodo)){
+        return '';
+    }
+    $token = $nodo->token;
+    switch ($token->tipo){
+        case tipoToken::tokenTermino: 
+        case tipoToken::tokenCADENA: 
+            return terminoCadena2($token->lexema, $columnas);
+        break;
+        case tipoToken::tokenPATRON:
+            return patron2($token->lexema, $columnas);
+        case tipoToken::tokenAND:
+        case tipoToken::tokenOR: 
+            return boleanoAndOr2($token->lexema,evaluarPrefijo($nodo->izquierda, $columnas), evaluarPrefijo($nodo->derecha, $columnas));
+        break;
+        case tipoToken::tokenNOT:
+            return not2($token->lexema);
             break;
         default:
         throw new Exception("Error al evalur el arbol binario");
@@ -212,19 +240,30 @@ function obtenerSQL($cadena){
 
     $arregloTokens = insertarORs($arregloTokens);
 
-
-//Prefijo "SELECT * FROM  $tabla WHERE
-    $prefijoConsulta = consultaPrefijo($valCampos);
-
-
 //Camposo a buscar [name, category,...]
     $columnas = campos($valCampos);
 
-    $prefijo = ordenPrefijo($arregloTokens, $columnas);
-    $arbol = construirArbol($prefijo);
-    $consulta = evaluar($arbol, $columnas);
-    $consulta = $prefijoConsulta.$consulta;
-    return $consulta;
+//Ordenar y  Contruir arbol
+    $sufijo = ordenPrefijo($arregloTokens, $columnas);
+    $arbolSufijo = construirArbol($sufijo);
+//----------------------
+
+    $sufijoResultado = evaluarSufijo($arbolSufijo, $columnas);
+
+    $prefijoDelSufijo = ')as r JOIN posting_v as v on v.id_documento = r.id_documento WHERE ';
+    $sufijoResultado= $prefijoDelSufijo.$sufijoResultado;
+
+ //Prefijo "SELECT * FROM  $tabla WHERE
+    $prefijoConsulta = consultaPrefijo2($valCampos);
+
+    $columnas = campos2();
+    $prefijo = ordenPrefijo($arregloTokens, $columnas, true);
+    $arbolPrefijo = construirArbol($prefijo);
+
+
+    $prefijoResultado = evaluarPrefijo($arbolPrefijo, $columnas);
+
+    return $prefijoConsulta.$prefijoResultado.$sufijoResultado;
 }
 /*
 //Obtener

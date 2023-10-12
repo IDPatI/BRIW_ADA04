@@ -1,6 +1,6 @@
 <?php
 //IMPORTANTE, AQUI SOLO REFERENCIAR A UN DOCUMENTO
-require 'parseador.php';
+//require 'parseador.php';
 
 //Coneccion al server
 $servidor = 'localhost';
@@ -99,24 +99,31 @@ function sumarFrecuencia($termino){
     return true;
 }
 
-if(!isset($_POST['consulta'])){return;}
-try{
-    $sql = obtenerSQL($_POST['consulta']);
-    //$resultado = $coneccion->query($sql);
-    //imprimirResultado($resultado);
-}catch(Exception $e){
-    echo '<b>'.$e->getMessage(). '</b>';
+
+function imprimirResultado($resultado){
+    $numColumnas = mysqli_num_fields($resultado);
+    $nombreColumnas = array();
+
+    //Encabezado
+    echo '<table>';
+    echo '<tr>';
+    for($i = 0; $i< $numColumnas; $i++){
+        $columna = $resultado->fetch_field();
+        echo '<th>'. $columna->name. '</th>';
+        $nombreColumnas[$i] = $columna->name;
+    }
+    echo '</tr>';
+
+    //Contenido
+    while($fila = $resultado->fetch_assoc()){
+        echo '<tr>';
+        for($i = 0; $i< $numColumnas; $i++){
+            echo '<td>'. $fila[$nombreColumnas[$i]]. '</td>';
+        }
+        echo '</tr>';
+    }
+    echo '</table>';
 }
 
-function clearStoredResults(){
-    $mysqli = $GLOBALS['coneccion'];
-    
-    do {
-         if ($res = $mysqli->store_result()) {
-           $res->free();
-         }
-    } while ($mysqli->more_results() && $mysqli->next_result());        
-    
-}
 
 ?>

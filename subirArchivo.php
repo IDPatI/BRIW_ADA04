@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <body>
-
+<a href="index.php">Atras</a>
 <form action="subirArchivo.php" method="post" enctype="multipart/form-data">
  <h2> Subir archivos</h2> <br>
   <input type="file" name="archivos[]" accept="file/txt" multiple>
@@ -9,6 +9,7 @@
   <br>
   <input type="submit" value="Subir archivos" name="subir">
 </form>
+
 <?php 
 if(!(isset($_FILES["archivos"]) && !empty($_FILES["archivos"]["name"][0]))){
    return;
@@ -58,6 +59,7 @@ function indexarArchivos($archivos, $directorio){
   foreach($archivos as $archivo){
     $contenido = file_get_contents($directorio.$archivo);
     if($contenido === false) die('Unable to read file: ' . $archivo);
+    $previo = substr($contenido, 0, 50);
     $contenido  = limpiar($contenido);
     $palabras = explode(" ", $contenido);
 
@@ -65,7 +67,6 @@ function indexarArchivos($archivos, $directorio){
     $num_palabras = sizeof($palabras);
     $url = $archivo;
     $nombre = substr($archivo, 0, -4);
-    $previo = substr($contenido, 0, 50);
     guardarArchivo($url, $nombre, $previo, $num_palabras);
     $id_documento = buscarArchivo($nombre)['id_documento'];
 

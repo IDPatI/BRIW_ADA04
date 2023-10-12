@@ -81,6 +81,7 @@ class lexer{
 
 function lexerTermino(lexer $lexer){
   $lexema = '';
+  
   while($lexer->actual!=' '&& !$lexer->sinCaracter()){
     $lexema.=  $lexer->actual;
     $lexer->siguiente();

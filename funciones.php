@@ -2,7 +2,7 @@
 //$consulta = 'SELECT * FROM products WHERE';
 
 function boleanoAndOr(string $operador,string $izquierda,string $derecha){
- return $izquierda. ' '. $operador.' '.$derecha;
+ return $izquierda. ' '. 'OR'.' '.$derecha;
 }
 
 function not($cadena){
@@ -45,7 +45,7 @@ function consultaPrefijo($campos = NULL){
     $campos= str_replace(' ', '', $campos);
     $resultado = 'SELECT * FROM ';
     if(empty($campos)){
-        $resultado.= ' vocabulario WHERE';
+        $resultado.= ' posting_v WHERE';
         return $resultado;
     }
     $camposArray = explode(",", $campos);
